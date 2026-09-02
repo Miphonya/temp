@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="fr" id="htmlRoot">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Vivace</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎻</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<link rel="stylesheet" href="styles/vivace.css"> 
+<body>
+<div class="app">
+
+  <div id="desktopBanner" class="desktop-banner" style="display:none;">
+    <span class="icon">📱</span>
+    <span id="desktopBannerText"></span>
+    <button id="desktopBannerClose" type="button" aria-label="Fermer">✕</button>
+  </div>
+
+  <header>
+    <div class="clef-badge">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <text x="12" y="19" text-anchor="middle" font-size="20" fill="#FFFDF8" font-family="Fraunces, serif">&#119070;</text>
+      </svg>
+    </div>
+    <div>
+      <h1>Vivace</h1>
+      <p id="headerSubtitle"></p>
+    </div>
+  </header>
+
+  <div class="tabs" role="tablist" aria-label="Navigation">
+    <button class="tab-btn" role="tab" id="tabPlayBtn" aria-selected="true" aria-controls="panelPlay"></button>
+    <button class="tab-btn" role="tab" id="tabOptionsBtn" aria-selected="false" aria-controls="panelOptions"></button>
+  </div>
+
+  <!-- ================= JOUER ================= -->
+  <section id="panelPlay" role="tabpanel" aria-labelledby="tabPlayBtn" class="active">
+
+    <div class="scorebar">
+      <div class="score-chip"><span class="num" id="scoreCorrect">0</span><span class="lbl" id="lblCorrect"></span></div>
+      <div class="score-chip"><span class="num" id="scoreStreak">0</span><span class="lbl" id="lblStreak"></span></div>
+      <div class="score-chip"><span class="num" id="scoreTotal">0</span><span class="lbl" id="lblTotal"></span></div>
+    </div>
+
+    <div class="staff-card">
+      <svg id="staffSvg" viewBox="0 0 300 240" xmlns="http://www.w3.org/2000/svg" aria-label="Portée musicale avec une note"></svg>
+    </div>
+
+    <div class="listen-row">
+      <button class="listen-btn" id="listenBtn" type="button">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 9v6h4l5 5V4L8 9H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg>
+        <span id="listenBtnText"></span>
+      </button>
+    </div>
+
+    <p class="feedback" id="feedback" aria-live="polite"></p>
+
+    <div class="answers" id="answers"></div>
+
+    <div id="noNotesWarning" class="warning-box" style="display:none;"></div>
+
+  </section>
+
+  <!-- ================= REGLAGES ================= -->
+  <section id="panelOptions" role="tabpanel" aria-labelledby="tabOptionsBtn">
+
+    <p class="opt-intro" id="optIntro"></p>
+
+    <div class="opt-card">
+      <h3 id="langTitle"></h3>
+      <p class="opt-sub" id="langSub"></p>
+      <div class="chip-row" id="langChips"></div>
+    </div>
+
+    <div id="stringCards"></div>
+
+    <div class="opt-footer">
+      <span class="count-badge"><strong id="comboCount">0</strong> <span id="comboCountLabel"></span></span>
+      <button class="reset-btn" id="resetBtn" type="button"></button>
+    </div>
+
+  </section>
+
+  <footer id="footerText"></footer>
+
+</div>
+
+<div id="onboardOverlay" class="modal-overlay" style="display:none;">
+  <div class="modal-card">
+    <div class="clef-badge">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <text x="12" y="19" text-anchor="middle" font-size="20" fill="#FFFDF8" font-family="Fraunces, serif">&#119070;</text>
+      </svg>
+    </div>
+    <h2>Bienvenue · Welcome</h2>
+    <p>Choisis ta langue pour commencer.<br>Choose your language to begin.</p>
+    <div class="lang-choice">
+      <button class="lang-btn" id="chooseFr" type="button">Français</button>
+      <button class="lang-btn" id="chooseEn" type="button">English</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script src="scripts/vivace.js"></script>
+</body>
+</html>

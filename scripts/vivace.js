@@ -22,7 +22,7 @@
       reset: 'Réinitialiser',
       langTitle: 'Langue',
       langSub: 'Change la langue de l\u2019application et le nom des notes.',
-      footer: 'Vivace · un compagnon de lecture pour jeunes violonistes',
+      footer: '',
       desktopBanner: 'Vivace est pensé pour mobile — ouvre-le sur ton téléphone pour une meilleure expérience.',
       savedToast: 'Réglages enregistrés',
       stringNames: { G:'Sol', D:'Ré', A:'La', E:'Mi' }

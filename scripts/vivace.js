@@ -22,6 +22,8 @@
       reset: 'Réinitialiser',
       langTitle: 'Langue',
       langSub: 'Change la langue de l\u2019application et le nom des notes.',
+      quickSelectTitle: 'Sélection rapide par doigt (toutes cordes)',
+      btnFinger: function(f){ return 'Doigt ' + f; },
       footer: '',
       desktopBanner: 'Vivace est pensé pour mobile — ouvre-le sur ton téléphone pour une meilleure expérience.',
       savedToast: 'Réglages enregistrés',
@@ -46,6 +48,8 @@
       reset: 'Reset',
       langTitle: 'Language',
       langSub: 'Change the app language and how notes are named.',
+      quickSelectTitle: 'Quick finger selection (all strings)',
+      btnFinger: function(f){ return 'Finger ' + f; },
       footer: '',
       desktopBanner: '',
       savedToast: 'Settings saved',
@@ -100,7 +104,7 @@
           }
         }
       });
-    }catch(e){ /* ignore malformed data, fall back to defaults */ }
+    }catch(e){ /* ignore malformed data */ }
     return base;
   }
 
@@ -113,7 +117,8 @@
     correct: 0,
     total: 0,
     streak: 0,
-    locked: false
+    locked: false,
+    nextNoteTimer: null
   };
 
   function buildCombos(){
@@ -127,30 +132,39 @@
     return combos;
   }
 
-  /* ============ PERSISTANCE (mémoire des réglages) ============ */
-  var hasStorage = (typeof window.storage !== 'undefined' && window.storage);
-  var saveTimer = null;
+  /* ============ PERSISTANCE (localStorage) ============ */
+  var STORAGE_KEY = 'vivace-prefs';
 
   function savePrefs(){
-    if(!hasStorage) return;
-    var payload = JSON.stringify({ language: lang, settings: settings });
-    window.storage.set('vivace-prefs', payload, false).then(function(res){
-      if(res) showToast(I18N[lang].savedToast);
-    }).catch(function(){ /* sauvegarde impossible, on continue en mémoire locale */ });
-  }
-  function schedulesSave(){
-    if(saveTimer) clearTimeout(saveTimer);
-    saveTimer = setTimeout(savePrefs, 250);
+    try {
+      var payload = JSON.stringify({ language: lang, settings: settings });
+      localStorage.setItem(STORAGE_KEY, payload);
+      showToast(I18N[lang].savedToast);
+    } catch(e) {
+      /* localStorage indisponible */
+    }
   }
 
   function loadPrefs(){
-    if(!hasStorage) return Promise.resolve(null);
-    return window.storage.get('vivace-prefs', false)
-      .then(function(res){
-        if(!res || !res.value) return null;
-        try{ return JSON.parse(res.value); }catch(e){ return null; }
-      })
-      .catch(function(){ return null; });
+    try {
+      var data = localStorage.getItem(STORAGE_KEY);
+      if(!data) return null;
+      return JSON.parse(data);
+    } catch(e) {
+      return null;
+    }
+  }
+
+  /* ============ APPLIQUER MODIFICATION DES REGLAGES ============ */
+  function onSettingsChanged(){
+    if (state.nextNoteTimer) {
+      clearTimeout(state.nextNoteTimer);
+      state.nextNoteTimer = null;
+    }
+    state.locked = false;
+    updateComboCount();
+    savePrefs();
+    nextNote();
   }
 
   /* ============ RENDU PORTEE ============ */
@@ -328,7 +342,8 @@
     scoreStreakEl.textContent = state.streak;
     scoreTotalEl.textContent = state.total;
 
-    setTimeout(function(){
+    state.nextNoteTimer = setTimeout(function(){
+      state.nextNoteTimer = null;
       state.locked = false;
       nextNote();
     }, isCorrect ? 800 : 1500);
@@ -359,6 +374,49 @@
 
   function updateComboCount(){
     comboCountEl.textContent = buildCombos().length;
+  }
+
+  /* Rendu des 4 boutons de sélection rapide pour Doigt 1, 2, 3 et 4 */
+  function buildQuickSelectCard(){
+    var existingCard = document.getElementById('quickSelectCard');
+    if(existingCard) existingCard.remove();
+
+    var t = I18N[lang];
+    var card = document.createElement('div');
+    card.id = 'quickSelectCard';
+    card.className = 'opt-card';
+
+    var h3 = document.createElement('h3');
+    h3.textContent = t.quickSelectTitle;
+    card.appendChild(h3);
+
+    var row = document.createElement('div');
+    row.className = 'chip-row';
+
+    [1, 2, 3, 4].forEach(function(finger){
+      // Vérifier si le doigt est entièrement coché sur toutes les cordes
+      var allActive = STRING_KEYS.every(function(k){ return settings.strings[k][finger]; });
+
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'chip wide';
+      btn.textContent = t.btnFinger(finger);
+      btn.setAttribute('aria-pressed', allActive ? 'true' : 'false');
+
+      btn.addEventListener('click', function(){
+        var newState = !allActive;
+        STRING_KEYS.forEach(function(k){
+          settings.strings[k][finger] = newState;
+        });
+        buildQuickSelectCard();
+        buildStringCards();
+        onSettingsChanged();
+      });
+      row.appendChild(btn);
+    });
+
+    card.appendChild(row);
+    stringCardsEl.parentNode.insertBefore(card, stringCardsEl);
   }
 
   function buildStringCards(){
@@ -394,8 +452,8 @@
           chip.addEventListener('click', function(){
             settings.strings[key][finger] = !settings.strings[key][finger];
             chip.setAttribute('aria-pressed', settings.strings[key][finger] ? 'true' : 'false');
-            updateComboCount();
-            schedulesSave();
+            buildQuickSelectCard();
+            onSettingsChanged();
           });
           row.appendChild(chip);
         })(f);
@@ -416,7 +474,7 @@
       chip.addEventListener('click', function(){
         if(lang === opt.code) return;
         setLanguage(opt.code);
-        schedulesSave();
+        savePrefs();
       });
       langChipsEl.appendChild(chip);
     });
@@ -424,9 +482,9 @@
 
   document.getElementById('resetBtn').addEventListener('click', function(){
     settings = defaultSettings();
+    buildQuickSelectCard();
     buildStringCards();
-    updateComboCount();
-    schedulesSave();
+    onSettingsChanged();
   });
 
   /* ============ TEXTES STATIQUES / LANGUE ============ */
@@ -459,6 +517,7 @@
   function setLanguage(newLang){
     lang = newLang;
     refreshAnswerLabels();
+    buildQuickSelectCard();
     buildStringCards();
     buildLanguageChips();
     applyStaticTexts();
@@ -506,7 +565,17 @@
   /* ============ INIT ============ */
   function init(){
     drawStaticStaff();
+    
+    var stored = loadPrefs();
+    if(stored){
+      settings = mergeSettings(stored.settings);
+      if(stored.language === 'fr' || stored.language === 'en'){
+        lang = stored.language;
+      }
+    }
+
     refreshAnswerLabels();
+    buildQuickSelectCard();
     buildStringCards();
     buildLanguageChips();
     applyStaticTexts();
@@ -514,22 +583,9 @@
     nextNote();
     checkDesktop();
 
-    loadPrefs().then(function(stored){
-      if(stored){
-        settings = mergeSettings(stored.settings);
-        if(stored.language === 'fr' || stored.language === 'en'){
-          lang = stored.language;
-        }
-        refreshAnswerLabels();
-        buildStringCards();
-        buildLanguageChips();
-        applyStaticTexts();
-        updateComboCount();
-        nextNote();
-      } else {
-        openOnboarding();
-      }
-    });
+    if(!stored){
+      openOnboarding();
+    }
   }
 
   init();
